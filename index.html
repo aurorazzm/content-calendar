@@ -538,7 +538,7 @@
 
   const params = new URLSearchParams(window.location.search);
   const READ_ONLY = !params.has('edit');
-  const DATA_URL = params.get('data') || './blinkko_calendar.json';
+  const DATA_URL = params.get('data') || './calendar.json';
 
   const now = new Date();
   let currentYear = now.getFullYear();
