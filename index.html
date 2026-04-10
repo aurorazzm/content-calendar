@@ -537,7 +537,6 @@
   };
 
   const params = new URLSearchParams(window.location.search);
-  const READ_ONLY = !params.has('edit');
   const DATA_URL = params.get('data') || './calendar.json';
 
   const now = new Date();
@@ -578,7 +577,7 @@
       cell.innerHTML = `
         <div class="day-num">${d}</div>
         <div class="entries" id="entries-${dateKey}"></div>
-        ${READ_ONLY ? '' : `<button class="add-btn" onclick="openModal('${dateKey}')">+</button>`}
+        <button class="add-btn" onclick="openModal('${dateKey}')">+</button>
       `;
       grid.appendChild(cell);
 
@@ -596,15 +595,13 @@
         pill.innerHTML = `
           <div class="pill-dot" style="background:${pillarC}"></div>
           <span class="pill-text">${entry.title || entry.platform}</span>
-          ${READ_ONLY ? '' : `<span class="pill-delete" onclick="deleteEntry(event,'${dateKey}',${entries.indexOf(entry)})">✕</span>`}
+          <span class="pill-delete" onclick="deleteEntry(event,'${dateKey}',${entries.indexOf(entry)})">✕</span>
         `;
-        if (!READ_ONLY) {
-          pill.addEventListener('click', (e) => {
-            if (!e.target.classList.contains('pill-delete')) {
-              openModal(dateKey, entries.indexOf(entry));
-            }
-          });
-        }
+        pill.addEventListener('click', (e) => {
+          if (!e.target.classList.contains('pill-delete')) {
+            openModal(dateKey, entries.indexOf(entry));
+          }
+        });
         entriesEl.appendChild(pill);
       });
     }
@@ -632,7 +629,6 @@
 
   // ── Modal ──────────────────────────────────────────────
   function openModal(dateKey, idx = null) {
-    if (READ_ONLY) return;
     modalDate = dateKey;
     editIndex = idx;
     selectedPlatform = null;
@@ -685,7 +681,6 @@
   }
 
   function saveEntry() {
-    if (READ_ONLY) return;
     const title = document.getElementById('entryTitle').value.trim();
     if (!title && !selectedPlatform) return;
 
@@ -712,7 +707,6 @@
   }
 
   function deleteEntry(event, dateKey, idx) {
-    if (READ_ONLY) return;
     event.stopPropagation();
     calendarData[dateKey].splice(idx, 1);
     if (calendarData[dateKey].length === 0) delete calendarData[dateKey];
@@ -722,7 +716,6 @@
 
   // ── Export ─────────────────────────────────────────────
   function exportData() {
-    if (READ_ONLY) return;
     const blob = new Blob([JSON.stringify(calendarData, null, 2)], {type:'application/json'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -740,35 +733,24 @@
 
   // ── Init ───────────────────────────────────────────────
   async function initData() {
-    if (!READ_ONLY) {
-      const local = localStorage.getItem('blinkkoCal');
-      if (local) {
-        calendarData = JSON.parse(local);
-        return;
-      }
+    const local = localStorage.getItem('blinkkoCal');
+    if (local) {
+      calendarData = JSON.parse(local);
+      return;
     }
 
     try {
       const res = await fetch(DATA_URL, { cache: 'no-store' });
       if (!res.ok) throw new Error(`Failed to load data: ${res.status}`);
       calendarData = await res.json();
-      if (!READ_ONLY) {
-        localStorage.setItem('blinkkoCal', JSON.stringify(calendarData));
-      }
+      localStorage.setItem('blinkkoCal', JSON.stringify(calendarData));
     } catch (e) {
       calendarData = {};
       console.error(e);
     }
   }
 
-  function applyReadOnlyUI() {
-    if (!READ_ONLY) return;
-    const exportBtn = document.getElementById('exportBtn');
-    if (exportBtn) exportBtn.style.display = 'none';
-  }
-
   (async function init() {
-    applyReadOnlyUI();
     await initData();
     renderCalendar();
   })();
